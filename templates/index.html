@@ -126,17 +126,14 @@
         el: '#app',
         data: {
             torrentFiles: [],
-            ipToken: {},
             currentFile: {},
-            minCamera: 1,
-            page: 1,
-            loading: false,
-            selectedCamera: null
+            category: 0,
+            searchTerm: ""
         },
         methods: {
-            getTopHashes: function () {
-                // Pull list of DVRs for the given user
-                this.$http.get(urlBase + '/api-search/').then(
+            getTorrentFiles: function (url_path) {
+                url_path = url_path == null ? '/api-search': url_path;
+                this.$http.get(urlBase + url_path).then(
                     function (response) {
                         this.torrentFiles = response.body;
                         $('select').material_select();
@@ -146,7 +143,6 @@
                         Materialize.toast('Unable to access Database', 5000);
                     }
                 )
-
             },
             setCurrentFile: function (selectedFile) {
                 // Get the currentFile's token or clear currentFile if unable to retrieve token
@@ -162,13 +158,30 @@
                     }
                 );
             },
-
             setPage: function (newPage) {
                 this.page = newPage;
             },
+            setCategory: function (selectedCategory) {
+                this.category = categoryMap[selectedCategory];
+
+                if (this.searchTerm == "") {
+                    url_path = '/browse/' + this.category
+                } else {
+                    // string replace in searchTerm replace ' ' with %2B
+                    url_path = '/api-search/?q=' + this.searchTerm + '&category=' + this.category + '&orderby=99'
+                }
+
+                this.getTorrentFiles(url_path);
+            },
+            setSearchTerm: function (searchTerm) {
+                this.searchTerm = searchTerm.replace(' ', '%2B');
+
+                url_path = '/api-search/?q=' + this.searchTerm + '&category=' + this.category + '&orderby=99'
+                this.getTorrentFiles(url_path);
+            }
+
         },
         filters: {
-
             strTruncate: function (string) {
                 return string.substring(0, 30);
             }
@@ -178,7 +191,7 @@
 
     // Start
     window.onload = function () {
-        this.pbSearch.getTopHashes();
+        this.pbSearch.getTorrentFiles();
     };
 </script>
 </body>
