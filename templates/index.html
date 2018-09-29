@@ -38,10 +38,6 @@
         </div>
     </nav>
     <div class="row">
-        <div class="col s12" v-if="currentFile.title">
-            <h1 class="center-align">Downloading {{ currentFile.title }}</h1>
-
-        </div>
         <div class="col s3" v-for="torrentFile in torrentFiles">
             <div class="card">
                 <div class="card-image">
@@ -154,15 +150,12 @@
             },
             setCurrentFile: function (selectedFile) {
                 // Get the currentFile's token or clear currentFile if unable to retrieve token
-                this.minCamera = 0;
                 this.currentFile = selectedFile;
-                this.selectedCamera = null;
-                this.loading = true;
+                Materialize.toast('Downloading ' + this.currentFile.title.substring(0, 20), 5000);
                 this.$http.get(urlBase + '/get-gvtoken/' + this.currentFile.value,
                     {headers: headers}).then(
                     function (response) {
-                        this.currentFile['token'] = response.body['key'];
-                        this.loading = false;
+                        Materialize.toast('Downloading ' + this.currentFile.title.substring(0, 20), 5000);
                     }, function (error) {
                         this.currentFile = {};
                         Materialize.toast('Unable to access property', 5000);
