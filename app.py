@@ -99,6 +99,12 @@ def recent_torrents(page=0):
     return jsonify(parse_page(url, sort=sort_arg)), 200
 
 
+@APP.route('/browse/<int:cat>/', methods=['GET'])
+def browse_torrents(cat=0):
+    url = BASE_URL + 'browse/' + str(cat)
+    return jsonify(parse_page(url, sort=sort_arg)), 200
+
+
 @APP.route('/api-search/', methods=['GET'])
 def api_search():
     url = BASE_URL + 's/?' + request.query_string.decode('utf-8')
