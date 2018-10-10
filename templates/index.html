@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
+<meta charset="UTF-8">
 <head>
-    <meta charset="UTF-8">
-    <head>
-        <!--Styling-->
-        <link rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Styling-->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-        <!-- JavaScript -->
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+    <!-- JavaScript -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
 
-        <!--Vue Stuff-->
-        <script src="https://cdn.jsdelivr.net/npm/vue"></script>
-        <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.3.4"></script>
-
-        <title>The (Unofficial) Pirate Bay</title>
-    </head>
+    <!--Vue Stuff-->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/marked@0.3.6"></script>
+    <script src="https://unpkg.com/lodash@4.16.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
+    <title>The (Unofficial) Pirate Bay</title>
+</head>
 <body>
 <div id="app" class="row">
     <nav class="cyan lighten-2">
@@ -28,18 +29,18 @@
         </div>
         <div class="input-field col s4">
             <i class="material-icons prefix">search</i>
-            <input id="search_term" type="text" class="validate" style="font-size: 1.25em; padding-top: 15px">
+            <input :value="searchTerm" @input="termSearch" id="search_term" class="validate"
+                   type="text" style="font-size: 1.25em; padding-top: 15px">
             <label for="search_term" style="color: white">Search term</label>
         </div>
         <div class="input-field col s4">
-            <input type="text" id="autocomplete-input" class="autocomplete"
-                   style="font-size: 1.25em; padding-top: 15px">
-            <label for="autocomplete-input" style="color: white">Category</label>
+            <input type="text" id="autocomplete-input" class="autocomplete" v-model="categoryKey">
+            <label for="autocomplete-input">Category</label>
         </div>
     </nav>
     <div class="row">
-        <div class="col s3" v-for="torrentFile in torrentFiles">
-            <div class="card">
+        <div class="col s3" v-for="torrentFile in torrentFiles[0]">
+            <div class="card" style="z-index: -1;">
                 <div class="card-image">
                     <img
                             src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/The_Pirate_Bay_logo.svg/2000px-The_Pirate_Bay_logo.svg.png">
@@ -59,21 +60,7 @@
             </div>
         </div>
     </div>
-    <!--<div class="row" style="margin-top: 1em;">-->
-    <!--&lt;!&ndash;Handle the paging&ndash;&gt;-->
-    <!--<div class="col s6 center">-->
-    <!--<button class="btn" v-if="page !== 1" v-on:click="setPage(page-1)">-->
-    <!--Page {{ page - 1 }}-->
-    <!--</button>-->
-    <!--</div>-->
-    <!--<div class="col s6 center">-->
-    <!--<button class="btn" v-on:click="setPage(page+1)">-->
-    <!--Page {{ page + 1 }}-->
-    <!--</button>-->
-    <!--</div>-->
-    <!--</div>-->
 </div>
-
 <script>
     $(document).ready(function () {
         $('input.autocomplete').autocomplete({
@@ -86,70 +73,50 @@
                 "Movies": null,
                 "TV shows": null,
                 "HD - Movies": null,
-                "HD - TV shows": null,
-                "Applications": null,
-                "Windows": null,
-                "Mac": null,
-                "UNIX": null,
-                "IOS": null,
-                "Games": null,
-                "PC": null,
-                "Playstation": null,
-                "XBOX 360": null
+                "HD - TV shows": null
             }
         });
+        $('select').material_select();
+        $('.modal').modal();
+        $(".button-collapse").sideNav();
     });
 
-    var urlBase = 'http://127.0.0.1:5000';
-    var categoryMap = {
-        "All": 0,
-        "Audio": 100,
-        "Music": 101,
-        "Audio books": 102,
-        "Video": 200,
-        "Movies": 201,
-        "TV shows": 100,
-        "HD - Movies": 207,
-        "HD - TV shows": 208,
-        "Applications": 300,
-        "Windows": 301,
-        "Mac": 302,
-        "UNIX": 303,
-        "IOS": 305,
-        "Games": 400,
-        "PC": 401,
-        "Playstation": 403,
-        "XBOX 360": 404
-    };
+    const instance = axios.create({baseURL: 'http://127.0.0.1:5000'});
 
     var pbSearch = new Vue({
         el: '#app',
         data: {
             torrentFiles: [],
             currentFile: {},
-            category: 0,
+            categories: {
+                "All": 0,
+                "Music": 101,
+                "Audio books": 102,
+                "Video": 200,
+                "Movies": 201,
+                "TV shows": 100,
+                "HD - Movies": 207,
+                "HD - TV shows": 208
+            },
+            categoryKey: "All",
             searchTerm: ""
         },
         methods: {
             getTorrentFiles: function (url_path) {
                 url_path = url_path == null ? '/api-search': url_path;
-                this.$http.get(urlBase + url_path).then(
-                    function (response) {
-                        this.torrentFiles = response.body;
-                        $('select').material_select();
-                        $('.modal').modal();
-                        $(".button-collapse").sideNav();
-                    }, function (error) {
-                        Materialize.toast('Unable to access Database', 5000);
-                    }
-                )
+                this.torrentFiles = [];
+                instance.get(url_path).then(function(response){
+                    this.pbSearch.torrentFiles.push(response.data);
+                }, function(error){
+                    console.log('YOU SUCK');
+                    Materialize.toast(error, 5000);
+                });
             },
             setCurrentFile: function (selectedFile) {
                 // Get the currentFile's token or clear currentFile if unable to retrieve token
                 this.currentFile = selectedFile;
                 Materialize.toast('Downloading ' + this.currentFile.title.substring(0, 20), 5000);
-                this.$http.get(urlBase + '/get-gvtoken/' + this.currentFile.value,
-                    {headers: headers}).then(
+                instance.get(urlBase + '/get-gvtoken/' + this.currentFile.value).then(
                     function (response) {
                         Materialize.toast('Downloading ' + this.currentFile.title.substring(0, 20), 5000);
                     }, function (error) {
@@ -161,31 +128,39 @@
             setPage: function (newPage) {
                 this.page = newPage;
             },
-            setCategory: function (selectedCategory) {
-                this.category = categoryMap[selectedCategory];
-
-                if (this.searchTerm == "") {
-                    url_path = '/browse/' + this.category
-                } else {
-                    // string replace in searchTerm replace ' ' with %2B
-                    url_path = '/api-search/?q=' + this.searchTerm + '&category=' + this.category + '&orderby=99'
+            termSearch: _.debounce(function (e) {
+                var newSearchTerm = e.target.value;
+                if (newSearchTerm.length > 2 && this.searchTerm != newSearchTerm) {
+                    this.searchTerm = newSearchTerm;
+                    url_path = '/api-search/?q=' + this.searchTerm.replace(' ', '%2B') + '&category=' + this.category + '&orderby=99';
+                    this.getTorrentFiles(url_path);
                 }
+            }, 300)
+        },
+        watch: {
+            categoryKey: function(newCategory) {
+                console.log('Did This wOrk?');
+                console.log(this.categoryKey in this.categories);
+                console.log(this.categoryKey);
+                console.log(this.categories);
+                if (this.categoryKey in this.categories) {
+                    this.categoryKey = newCategory;
 
-                this.getTorrentFiles(url_path);
-            },
-            setSearchTerm: function (searchTerm) {
-                this.searchTerm = searchTerm.replace(' ', '%2B');
+                    if (this.searchTerm == "") {
+                        url_path = '/browse/' + this.category
+                    } else {
+                        // string replace in searchTerm replace ' ' with %2B
+                        url_path = '/api-search/?q=' + this.searchTerm + '&category=' + this.categories[this.categoryKey] + '&orderby=99'
+                    }
 
-                url_path = '/api-search/?q=' + this.searchTerm + '&category=' + this.category + '&orderby=99'
-                this.getTorrentFiles(url_path);
+                    this.getTorrentFiles(url_path);
+                }
             }
-
         },
         filters: {
             strTruncate: function (string) {
                 return string.substring(0, 30);
             }
-
         }
     });
 
@@ -196,3 +171,4 @@
 </script>
 </body>
 </html>
+

@@ -102,7 +102,7 @@ def recent_torrents(page=0):
 @APP.route('/browse/<int:cat>/', methods=['GET'])
 def browse_torrents(cat=0):
     url = BASE_URL + 'browse/' + str(cat)
-    return jsonify(parse_page(url, sort=sort_arg)), 200
+    return jsonify(parse_page(url)), 200
 
 
 @APP.route('/api-search/', methods=['GET'])
@@ -234,6 +234,7 @@ def convert_to_bytes(size_str):
     size_multiplier = 1024 ** multiplier_exp if multiplier_exp > 0 else 1
 
     return size_magnitude * size_multiplier
+
 
 def convert_to_date(date_str):
     '''
