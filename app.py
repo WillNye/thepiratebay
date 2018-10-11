@@ -107,8 +107,48 @@ def browse_torrents(cat=0):
 
 @APP.route('/api-search/', methods=['GET'])
 def api_search():
-    url = BASE_URL + 's/?' + request.query_string.decode('utf-8')
-    return jsonify(parse_page(url)), 200
+    """
+    Map Reference
+    {
+        "All": 0,
+        "Video": 200,
+        "Movies": 201,
+        "TV shows": 100,
+        "HD - Movies": 207,
+        "HD - TV shows": 208
+    }
+    :return:
+    """
+    category_map = {
+        0: [0],
+        1: [200, 201, 207],
+        2: [100, 208],
+        100: [100],
+        200: [200],
+        201: [201],
+        207: [207],
+        208: [208]
+    }
+
+    available_torrents = []
+    search_term = request.args.get('q', None)
+    request_category = request.args.get('category', 0)
+
+    for category in category_map[int(request_category)]:
+        if search_term is not None:
+            url = BASE_URL + 's/?q={}&category={}&orderby99'.format(search_term, category)
+        else:
+            url = BASE_URL + 's/?category={}&orderby99'.format(category)
+        available_torrents += parse_page(url)
+
+    available_torrents = [torrent for torrent in available_torrents if torrent['category'].lower() != 'porn']
+    return jsonify(available_torrents), 200
+
+
+@APP.route('/download-torrent', methods=['POST'])
+def download_torrent():
+    post_request = request.get_json()
+    return jsonify(post_request['magnet']), 200
 
 
 @APP.route('/search/', methods=['GET'])
