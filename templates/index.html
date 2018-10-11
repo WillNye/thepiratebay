@@ -33,19 +33,19 @@
                    type="text" style="font-size: 1.25em; padding-top: 15px">
             <label for="search_term" style="color: white">Search term</label>
         </div>
-        <div class="input-field col s4">
-            <input type="text" id="autocomplete-input" class="autocomplete" v-model="categoryKey">
-            <label for="autocomplete-input">Category</label>
+        <div class="input-field col s4" style="padding-bottom:0; margin-bottom:0; padding-top:15px;">
+            <select v-select=selected>
+                <option :value="item.value" v-for='item in categoryOptions'>{{ item.key }}</option>
+                <label>Category</label>
+            </select>
         </div>
     </nav>
     <div class="row">
         <div class="col s3" v-for="torrentFile in torrentFiles[0]">
-            <div class="card" style="z-index: -1;">
+            <div class="card">
                 <div class="card-image">
-                    <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/The_Pirate_Bay_logo.svg/2000px-The_Pirate_Bay_logo.svg.png">
-                    <a class="btn-floating halfway-fab waves-effect waves-light red"
-                       v-on:click="setCurrentFile(torrentFile)">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/The_Pirate_Bay_logo.svg/2000px-The_Pirate_Bay_logo.svg.png">
+                    <a class="btn-floating halfway-fab waves-effect waves-light red" v-on:click="setCurrentFile(torrentFile)">
                         <i class="material-icons">add</i>
                     </a>
                 </div>
@@ -63,19 +63,6 @@
 </div>
 <script>
     $(document).ready(function () {
-        $('input.autocomplete').autocomplete({
-            data: {
-                "All": null,
-                "Audio": null,
-                "Music": null,
-                "Audio books": null,
-                "Video": null,
-                "Movies": null,
-                "TV shows": null,
-                "HD - Movies": null,
-                "HD - TV shows": null
-            }
-        });
         $('select').material_select();
         $('.modal').modal();
         $(".button-collapse").sideNav();
@@ -90,15 +77,18 @@
             currentFile: {},
             categories: {
                 "All": 0,
-                "Music": 101,
-                "Audio books": 102,
                 "Video": 200,
                 "Movies": 201,
                 "TV shows": 100,
                 "HD - Movies": 207,
                 "HD - TV shows": 208
             },
-            categoryKey: "All",
+            selectedCategory: 0,
+            categoryOptions: [
+                {key: "All", value: 0},
+                {key: "Movies", value: 1},
+                {key: "TV Shows", value: 2}
+            ],
             searchTerm: ""
         },
         methods: {
@@ -108,22 +98,19 @@
                 instance.get(url_path).then(function(response){
                     this.pbSearch.torrentFiles.push(response.data);
                 }, function(error){
-                    console.log('YOU SUCK');
                     Materialize.toast(error, 5000);
                 });
             },
             setCurrentFile: function (selectedFile) {
                 // Get the currentFile's token or clear currentFile if unable to retrieve token
                 this.currentFile = selectedFile;
-                Materialize.toast('Downloading ' + this.currentFile.title.substring(0, 20), 5000);
-                instance.get(urlBase + '/get-gvtoken/' + this.currentFile.value).then(
-                    function (response) {
-                        Materialize.toast('Downloading ' + this.currentFile.title.substring(0, 20), 5000);
-                    }, function (error) {
-                        this.currentFile = {};
-                        Materialize.toast('Unable to access property', 5000);
-                    }
-                );
+                var truncated_title = selectedFile.title.substring(0, 20);
+                instance.post('/download-torrent', this.currentFile).then(function (response) {
+                    Materialize.toast('Downloading ' + truncated_title, 5000);
+                }).catch(function (error) {
+                    Materialize.toast('Error during download', 5000);
+                    console.log(error);
+                });
             },
             setPage: function (newPage) {
                 this.page = newPage;
@@ -132,34 +119,49 @@
                 var newSearchTerm = e.target.value;
                 if (newSearchTerm.length > 2 && this.searchTerm != newSearchTerm) {
                     this.searchTerm = newSearchTerm;
-                    url_path = '/api-search/?q=' + this.searchTerm.replace(' ', '%2B') + '&category=' + this.category + '&orderby=99';
-                    this.getTorrentFiles(url_path);
-                }
-            }, 300)
-        },
-        watch: {
-            categoryKey: function(newCategory) {
-                console.log('Did This wOrk?');
-                console.log(this.categoryKey in this.categories);
-                console.log(this.categoryKey);
-                console.log(this.categories);
-                if (this.categoryKey in this.categories) {
-                    this.categoryKey = newCategory;
-
-                    if (this.searchTerm == "") {
-                        url_path = '/browse/' + this.category
-                    } else {
-                        // string replace in searchTerm replace ' ' with %2B
-                        url_path = '/api-search/?q=' + this.searchTerm + '&category=' + this.categories[this.categoryKey] + '&orderby=99'
-                    }
+                    url_path = '/api-search/?q=' + this.searchTerm.replace(' ', '%2B') + '&category=' + this.selectedCategory + '&orderby=99';
 
                     this.getTorrentFiles(url_path);
                 }
-            }
+            }, 1000)
         },
         filters: {
             strTruncate: function (string) {
                 return string.substring(0, 30);
+            }
+        },
+        directives: {
+            select: {
+                "twoWay": true,
+                update: function (el, binding, vnode) {
+                    if (!vnode.elm.dataset.vueSelectReady) {
+
+                        $(el).on('change', function () {
+                            vnode.context.$set(vnode.context, binding.expression, el.value);
+                            var selectedCategory = vnode.context.selectedCategory;
+                            var searchTerm = vnode.context.searchTerm;
+
+                            if (selectedCategory != el.value) {
+                                vnode.context.selectedCategory = el.value;
+                                selectedCategory = el.value;
+
+                                if (searchTerm.length > 0) {
+                                    // string replace in searchTerm replace ' ' with %2B
+                                    url_path = '/api-search/?q=' + searchTerm.replace(' ', '%2B') + '&category=' + selectedCategory + '&orderby=99'
+                                } else {
+                                    url_path = '/api-search/?category=' + selectedCategory + '&orderby=99'
+                                }
+                                vnode.context.getTorrentFiles(url_path);
+                            }
+                        });
+
+                        $(el).material_select();
+                        vnode.elm.dataset.vueSelectReady = true
+                    }
+                },
+                unbind: function (el, binding, vnode) {
+                    $(el).material_select('destroy');
+                }
             }
         }
     });
