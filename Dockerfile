@@ -11,6 +11,7 @@ RUN apk add --no-cache libxml2-dev && \
     apk add --update --no-cache g++ gcc libxslt-dev && \
     pip3 install -r ./requirements.txt
 
+RUN apk add --no-cache transmission-cli
 
 WORKDIR /opt
 
