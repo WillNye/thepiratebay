@@ -1,4 +1,14 @@
-# thepiratebay API
+# This README isn't a representation of the functionality of the current project
+
+## ToDo
+- Update README
+- Possibly move to new project
+- Begin downloading movies and tv shows into dedicated directories
+- Add additional sites other than the pirate bay
+- Allow for complex filtering 
+- General clean up of code...it is currently looking rough
+
+## thepiratebay API
 
 This is unofficial API of thepiratebay.org. It is currently hosted on Heroku and returns JSON data. It uses Flask framework to display the results and Beautifulsoup for parsing the data. 
 
