@@ -1,21 +1,21 @@
-FROM python:3.6.4-alpine3.7
+FROM python:3.6.4
 
-RUN apk add --no-cache git
+RUN apt-get update && apt-get install -y \
+    git \
+    libxml2-dev \
+    libxml2 \
+    g++ \
+    gcc \
+    libxslt-dev \
+    transmission-cli
 
 ENV BASE_URL=https://thepiratebay.org/
 
 COPY requirements.txt requirements.txt
 
-RUN apk add --no-cache libxml2-dev && \
-    apk add --no-cache libxml2 && \
-    apk add --update --no-cache g++ gcc libxslt-dev && \
-    pip3 install -r ./requirements.txt
+RUN pip3 install -r ./requirements.txt
 
-RUN apk add --no-cache transmission-cli
-
-WORKDIR /opt
-
-RUN mkdir -p thepiratebay
+RUN mkdir -p /opt/thepiratebay /media/plex
 WORKDIR /opt/thepiratebay
 
 COPY . .
