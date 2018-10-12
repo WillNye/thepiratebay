@@ -3,7 +3,6 @@ This is the main module
 '''
 import os
 import re
-import sys
 from datetime import datetime, timedelta
 from subprocess import Popen, PIPE
 
@@ -35,33 +34,6 @@ sort_filters = {
     'category_asc': 13,
     'category_desc': 14
 }
-
-
-def run(cmd, max_attempts=1):
-    """Executes arbitrary terminal commands
-
-    Args:
-        cmd: Terminal command to be ran
-        max_attempts: Number of times to attempt the command before exiting
-    Returns:
-        A tuple containing the stdout and stderr
-    """
-
-    print("Executing: {}".format(cmd))
-
-    for attempt in range(max_attempts):
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, close_fds=True)
-        stdout, stderr = p.communicate()
-        if p.returncode != 0:
-            print("Error while running: {} \nErr: {}\n".format(cmd, stderr))
-            sleep(1)
-        else:
-            break
-
-    if len(stderr) > 0:
-        print(stderr)
-
-    return stdout, stderr
 
 
 @APP.route('/', methods=['GET'])
@@ -176,6 +148,9 @@ def api_search():
 @APP.route('/download-torrent', methods=['POST'])
 def download_torrent():
     post_request = request.get_json()
+    magnet = post_request['magnet']
+    Popen(["transmission-cli", "-w", "/media/plex", magnet])
+
     return jsonify(post_request['magnet']), 200
 
 
