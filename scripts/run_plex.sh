@@ -6,8 +6,9 @@
 # https://hub.docker.com/r/plexinc/pms-docker/
 # https://www.plex.tv/claim/
 
-
+docker rm -f plex
 docker container run -d --name plex \
+    --network=host \
     -p 32400:32400/tcp \
     -p 3005:3005/tcp \
     -p 8324:8324/tcp \
